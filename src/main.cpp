@@ -6,6 +6,8 @@
 #include "imgui/imgui_impl_opengl3.h"
 #include "imgui/imgui_impl_glfw.h"
 
+#include "mesh.h"
+#include "mesh_renderer.h"
 
 #define WIN_WIDTH	740
 #define WIN_HEIGHT	680
@@ -16,6 +18,16 @@ void temp_error_callback(int error_code, const char* descr);
 void main_loop(GLFWwindow *window) {
     glfwMakeContextCurrent(window);
 
+    sMesh sphere, cube;
+    sphere.load_OBJ_mesh("resources/sphere.obj");
+    cube.load_OBJ_mesh("resources/cube_t.obj");
+
+    sMeshRenderer sphere_renderer, cube_renderer;
+    sphere_renderer.create_from_mesh(&sphere);
+    cube_renderer.create_from_mesh(&cube);
+
+    sphere.clean();
+    cube.clean();
 
     while(!glfwWindowShouldClose(window)) {
         int width, heigth;
