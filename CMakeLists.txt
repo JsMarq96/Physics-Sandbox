@@ -23,7 +23,7 @@ target_link_libraries(phys_sandbox glfw)
 set(gl3w_dir "${includes_dir}/GL")
 add_library("gl3w" "${gl3w_dir}/src/gl3w.c")
 target_include_directories("gl3w" PRIVATE "${glw_dir}/")
-target_include_directories(phys_sandbox "${gl3w_dir}/")
+target_include_directories(phys_sandbox PRIVATE "${gl3w_dir}/")
 target_link_libraries(phys_sandbox "gl3w" "${CMAKE_DL_LIBS}")
 
 if( MSVC )
@@ -36,11 +36,11 @@ endif()
 endif()
 
 include_directories(
-  includes_dir
+  includes
   gl3w_dir
  )
 
-set_target_properties(phys_sandbox PROPERTIES OUTPUT_NAME "template")
+set_target_properties(phys_sandbox PROPERTIES OUTPUT_NAME "phys_sandbox")
 
 add_custom_command(TARGET phys_sandbox POST_BUILD
                    COMMAND ${CMAKE_COMMAND} -E copy_directory

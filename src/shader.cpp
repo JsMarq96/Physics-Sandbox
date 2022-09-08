@@ -190,12 +190,12 @@ void sShader::set_uniform_vector(const char* name,
 
 void sShader::set_uniform_matrix3(const char* name,
                                   const glm::mat3 &matrix) const {
-    glUniformMatrix3fv(glGetUniformLocation(ID, name), 1, false, &matrix[0]);
+    glUniformMatrix3fv(glGetUniformLocation(ID, name), 1, false, &matrix[0][0]);
 }
 
 void sShader::set_uniform_matrix4(const char* name,
                                   const glm::mat4 &matrix) const {
-    glUniformMatrix4fv(glGetUniformLocation(ID, name), 1, false, &matrix[0]);
+    glUniformMatrix4fv(glGetUniformLocation(ID, name), 1, false, &matrix[0][0]);
 }
 
 void sShader::set_uniform_matrix_array(const char* name,
