@@ -4,10 +4,12 @@
 #include <GL/gl3w.h>
 #include <GLFW/glfw3.h>
 
+#include "glm/ext/matrix_transform.hpp"
 #include "imgui/imgui.h"
 #include "imgui/imgui_impl_opengl3.h"
 #include "imgui/imgui_impl_glfw.h"
 
+#include "camera.h"
 #include "mesh.h"
 #include "mesh_renderer.h"
 #include "trasform.h"
@@ -36,6 +38,8 @@ float mass[INSTANCE_COUNT];
 float inv_mass[INSTANCE_COUNT];
 uint16_t obj_count = 0;
 
+glm::mat4 cube_models[INSTANCE_COUNT];
+glm::mat4 sphere_models[INSTANCE_COUNT];
 
 inline uint16_t add_sphere(const glm::vec3 &position,
                            const float radius,
@@ -61,6 +65,10 @@ inline uint16_t add_sphere(const glm::vec3 &position,
 void main_loop(GLFWwindow *window) {
     glfwMakeContextCurrent(window);
 
+    sCamera camera;
+    camera.position = {5.0f, 0.50f, 5.0f};
+    camera.look_at({0.0f, 0.001f, 0.0f});
+
     sMesh sphere, cube;
     sphere.load_OBJ_mesh("resources/sphere.obj");
     cube.load_OBJ_mesh("resources/cube_t.obj");
@@ -79,6 +87,8 @@ void main_loop(GLFWwindow *window) {
                                      1.0f,
                                      10.0f,
                                      false);
+
+    add_sphere({0.0f, 0.0f, 0.0f}, 1.0f, 20.0f, true);
 
     double start_time = glfwGetTime(), prev_frame_time;
     while(!glfwWindowShouldClose(window)) {
@@ -101,7 +111,26 @@ void main_loop(GLFWwindow *window) {
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
 
-        ImGui::Begin("Test");
+        ImGui::Begin("Speed");
+        for(uint16_t i = 0; i < obj_count; i++) {
+            if (!is_static[i]) {
+                continue;
+            }
+
+            char obj_name[] = "Obj 00";
+            obj_name[5] += i;
+            if(ImGui::TreeNode(obj_name)) {
+                 ImGui::Text("Position %f %f %f",
+                             transforms[i].position.x,
+                             transforms[i].position.y,
+                             transforms[i].position.z);
+                 ImGui::Text("Speed %f %f %f",
+                             speeds[i].linear.x,
+                             speeds[i].linear.y,
+                             speeds[i].linear.z);
+                 ImGui::TreePop();
+            }
+        }
         ImGui::End();
 
 
@@ -111,7 +140,7 @@ void main_loop(GLFWwindow *window) {
                 continue;
             }
             // Add gravity
-            speeds[i].linear += {0.0f, -9.8f, 0.0f};
+            speeds[i].linear += glm::vec3{0.0f, -9.8f, 0.0f};
         }
 
 
@@ -121,13 +150,45 @@ void main_loop(GLFWwindow *window) {
                 continue;
             }
 
-            transforms[i].position += speeds[i].linear * elapsed_time;
+            speeds[i].linear += (float) elapsed_time * speeds[i].linear;
             // TODO: angular speed integration
 
             // Add some energy loss
             speeds[i].linear *= 0.999f;
             speeds[i].angular *= 0.999f;
         }
+
+        uint16_t sphere_count = 0;
+        uint16_t cube_count = 0;
+        for(uint16_t i = 0; i < obj_count; i++) {
+            if (shapes[i] == BOX) {
+                cube_models[cube_count++] = transforms[i].get_model();
+            } else if (shapes[i] == SPHERE) {
+                sphere_models[sphere_count++] = transforms[i].get_model();
+            } else if (shapes[i] == PLANE) {
+                cube_models[cube_count++] = glm::scale(transforms[i].get_model(),
+                                                       glm::vec3{1.0f, 0.01f, 1.0f});
+            }
+        }
+
+        glm::mat4 vp_mat;
+        camera.get_perspective_viewprojection_matrix(90.0f,
+                                                     1000.0f,
+                                                     0.01f,
+                                                     (float) width / heigth,
+                                                     &vp_mat);
+
+        sphere_renderer.render(sphere_models,
+                               {0.0f, 1.0f, 0.0f, 1.0f},
+                               sphere_count,
+                               vp_mat,
+                               true);
+        cube_renderer.render(cube_models,
+                             {0.0f, 1.0f, 0.0f, 1.0f},
+                             cube_count,
+                             vp_mat,
+                             true);
+
 
 
         ImGui::Render();

@@ -69,7 +69,7 @@ struct sMeshRenderer {
     }
 
     void render(const glm::mat4 *models,
-                const glm::vec4 *colors,
+                const glm::vec4 &color,
                 const int count,
                 const glm::mat4 &view_proj,
                 const bool show_wireframe) const {
@@ -85,7 +85,7 @@ struct sMeshRenderer {
         for(int i = 0; i < count; i++) {
             shader.set_uniform_matrix4("u_model_mat", models[i]);
             shader.set_uniform_matrix4("u_view_proj", view_proj);
-            shader.set_uniform_vector("u_color", colors[i]);
+            shader.set_uniform_vector("u_color", color);
 
             glDrawElements(GL_TRIANGLES, indices_count, GL_UNSIGNED_SHORT, 0);
         }

@@ -90,7 +90,7 @@ struct sCamera {
         glm::mat4 persp = {};
         get_perspective_projection_matrix(FOV, far_plane, near_plane, aspect_ratio, &persp);
 
-        *result = view_mat * persp;
+        *result = persp * view_mat;
     }
 
   void set_rotation(const float pitch,
