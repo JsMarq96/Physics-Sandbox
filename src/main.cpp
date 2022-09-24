@@ -4,6 +4,7 @@
 #include <GL/gl3w.h>
 #include <GLFW/glfw3.h>
 
+#include "collision_manifold.h"
 #include "glm/ext/matrix_transform.hpp"
 #include "imgui/imgui.h"
 #include "imgui/imgui_impl_opengl3.h"
@@ -13,6 +14,7 @@
 #include "mesh.h"
 #include "mesh_renderer.h"
 #include "trasform.h"
+#include "collision_detection.h"
 
 #define WIN_WIDTH	740
 #define WIN_HEIGHT	680
@@ -37,6 +39,9 @@ eShape shapes[INSTANCE_COUNT];
 float mass[INSTANCE_COUNT];
 float inv_mass[INSTANCE_COUNT];
 uint16_t obj_count = 0;
+
+sCollisionManifold manifolds[INSTANCE_COUNT * INSTANCE_COUNT];
+uint16_t manifold_count = 0;
 
 glm::mat4 cube_models[INSTANCE_COUNT];
 glm::mat4 sphere_models[INSTANCE_COUNT];
@@ -83,12 +88,12 @@ void main_loop(GLFWwindow *window) {
     memset(is_static, false, sizeof(is_static));
 
 
-    uint16_t sphere_obj = add_sphere({0.0f, 50.0f, 0.0f},
-                                     1.0f,
+    uint16_t sphere_obj = add_sphere({0.20f, 0.0f, 0.0f},
+                                     10.0f,
                                      10.0f,
                                      false);
 
-    add_sphere({0.0f, 0.0f, 0.0f}, 1.0f, 20.0f, true);
+    add_sphere({0.0f, 50.0f, 0.0f}, 1.0f, 20.0f, true);
 
     double start_time = glfwGetTime(), prev_frame_time;
     while(!glfwWindowShouldClose(window)) {
@@ -111,7 +116,7 @@ void main_loop(GLFWwindow *window) {
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
 
-        ImGui::Begin("Speed");
+        ImGui::Begin("Objs");
         for(uint16_t i = 0; i < obj_count; i++) {
             if (!is_static[i]) {
                 continue;
@@ -143,6 +148,27 @@ void main_loop(GLFWwindow *window) {
             speeds[i].linear += glm::vec3{0.0f, -9.8f, 0.0f};
         }
 
+        // Test collisions
+        for(uint16_t i = 0; i < obj_count; i++) {
+            if (!is_static[i]) {
+                continue;
+            }
+            for(uint16_t j = i; j < obj_count; j++) {
+                // TODO test collisions
+                manifolds[manifold_count].obj1 = i;
+                manifolds[manifold_count].obj2 = j;
+
+                if (shapes[i] == SPHERE && shapes[j] == SPHERE) {
+                    if (CollDet::sphere_sphere_collision(transforms[i],
+                                                         transforms[j],
+                                                         &manifolds[manifold_count])) {
+                        manifold_count++;
+                    }
+                }
+            }
+        }
+
+
 
         // Integrate
         for(uint16_t i = 0; i < obj_count; i++) {
@@ -150,7 +176,7 @@ void main_loop(GLFWwindow *window) {
                 continue;
             }
 
-            speeds[i].linear += (float) elapsed_time * speeds[i].linear;
+            transforms[i].position += (float) elapsed_time * speeds[i].linear;
             // TODO: angular speed integration
 
             // Add some energy loss
@@ -179,15 +205,27 @@ void main_loop(GLFWwindow *window) {
                                                      &vp_mat);
 
         sphere_renderer.render(sphere_models,
-                               {0.0f, 1.0f, 0.0f, 1.0f},
+                               {0.0f, 0.0f, 0.0f, 1.0f},
                                sphere_count,
                                vp_mat,
                                true);
         cube_renderer.render(cube_models,
-                             {0.0f, 1.0f, 0.0f, 1.0f},
+                             {0.0f, 0.0f, 0.0f, 1.0f},
                              cube_count,
                              vp_mat,
                              true);
+
+
+        ImGui::Begin("Collisions");
+        for(uint16_t i = 0; i < manifold_count; i++) {
+
+            char obj_name[] = "Col 00";
+            obj_name[5] += i;
+            if(ImGui::TreeNode(obj_name)) {
+                 ImGui::TreePop();
+            }
+        }
+        ImGui::End();
 
 
 
